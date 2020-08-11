@@ -1,0 +1,14 @@
+[Unit]
+Description=Simple Network Management Protocol (SNMP) Trap Daemon.
+After=network.target
+ConditionPathExists=/etc/snmp/snmptrapd.conf
+
+[Service]
+Environment="MIBSDIR=/usr/share/snmp/mibs:/usr/share/snmp/mibs/iana:/usr/share/snmp/mibs/ietf:/usr/share/mibs/site:/usr/share/snmp/mibs:/usr/share/mibs/iana:/usr/share/mibs/ietf:/usr/share/mibs/netsnmp"
+Type=simple
+ExecStartPre=/bin/mkdir -p /var/log/snmp
+ExecStart=/usr/sbin/snmptrapd -Lf /var/log/snmp/snmptrapd.log -f
+ExecReload=/bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy=multi-user.target

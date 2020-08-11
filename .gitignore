@@ -1,0 +1,9 @@
+**/*.pyc
+**/*.old
+**/*.bak
+**/__pycache__
+**/*.swp
+build/
+dist/
+pyagentx3.egg-info/
+
