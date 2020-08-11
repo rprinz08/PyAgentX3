@@ -33,6 +33,8 @@ class SetHandler():
 
     def network_commit(self, session_id, transaction_id):
         tid = "%s_%s" % (session_id, transaction_id)
+        if tid not in self.transactions:
+            return
         try:
             oid, data = self.transactions[tid]
             self.commit(oid, data)
