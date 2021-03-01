@@ -12,6 +12,7 @@ logger.addHandler(NullHandler())
 import time
 import threading
 from queue import Full
+from collections import OrderedDict
 import pyagentx3
 
 
@@ -64,7 +65,7 @@ class Updater(threading.Thread):
         logger.info('Send Trap : %s (%s)', self.__class__.__name__, trap_oid)
         logger.info('Send Trap : %s', values)
 
-        data = {}
+        data = OrderedDict()
         # SNMPv2-MIB::snmpTrapOID.0 = trap_oid
         data['1.3.6.1.6.3.1.1.4.1.0'] = self._OBJECTIDENTIFIER('1.3.6.1.6.3.1.1.4.1.0', trap_oid)
         for value in values:
