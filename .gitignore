@@ -4,6 +4,7 @@
 **/__pycache__
 **/*.swp
 build/
+build.sh
 dist/
 private/
 pyagentx3.egg-info/
