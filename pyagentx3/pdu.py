@@ -14,6 +14,7 @@ from ipaddress import IPv4Address, IPv6Address
 import collections
 import pprint
 import pyagentx3
+from pyagentx3.tools import hexdump
 
 
 class PDU(object):
@@ -169,7 +170,14 @@ class PDU(object):
             # Unsupported PDU type
             pass
 
-        return self.encode_header(self.type, len(buf)) + buf
+        encoded_pdu = self.encode_header(self.type, len(buf)) + buf
+
+        logger.debug('Encoded AgentX PDU:')
+        for i in hexdump(encoded_pdu, sep='-'):
+            logger.debug(i)
+
+        return encoded_pdu
+
 
     # ====================================================
     # decode functions
@@ -197,7 +205,7 @@ class PDU(object):
                 sub_ids.append(t[0])
             oid = '.'.join(str(i) for i in sub_ids)
             return oid, ret['include']
-        except Exception as e:
+        except Exception:
             logger.exception('Invalid packing OID header')
             logger.debug('%s', pprint.pformat(self.decode_buf))
 
@@ -218,53 +226,77 @@ class PDU(object):
         try:
             t = struct.unpack('!L', self.decode_buf[:4])
             l = t[0]
+            buf = b''
             self.decode_buf = self.decode_buf[4:]
-            padding = 4 - (l%4)
-            buf = self.decode_buf[:l]
-            self.decode_buf = self.decode_buf[l+padding:]
+            if l > 0:
+                padding = 4 - (l % 4)
+                buf = self.decode_buf[:l]
+                self.decode_buf = self.decode_buf[l+padding:]
             return buf
-        except Exception as e:
+        except Exception:
             logger.exception('Invalid packing octet header')
 
     def decode_value(self):
+        ok = True
+        vtype = None
+        oid = None
+        data = None
+
         try:
             vtype, _ = struct.unpack('!HH', self.decode_buf[:4])
             self.decode_buf = self.decode_buf[4:]
-        except Exception as e:
-            logger.exception('Invalid packing value header')
-        oid, _ = self.decode_oid()
+        except Exception:
+            logger.exception('Unable to unpack value header')
+            ok = False
 
-        if vtype in [pyagentx3.TYPE_INTEGER,
-                     pyagentx3.TYPE_COUNTER32,
-                     pyagentx3.TYPE_GAUGE32,
-                     pyagentx3.TYPE_TIMETICKS]:
-            data = struct.unpack('!L', self.decode_buf[:4])
-            data = data[0]
-            self.decode_buf = self.decode_buf[4:]
+        if ok:
+            try:
+                oid, _ = self.decode_oid()
+            except Exception:
+                logger.exception('Unable to decode OID for value type (%s %s)',
+                    vtype, pyagentx3.TYPE_NAME.get(vtype, 'UNKNOWN'))
+                ok = False
 
-        elif vtype in [pyagentx3.TYPE_COUNTER64]:
-            data = struct.unpack('!Q', self.decode_buf[:8])
-            data = data[0]
-            self.decode_buf = self.decode_buf[8:]
+        if ok:
+            try:
+                if vtype in [pyagentx3.TYPE_INTEGER,
+                            pyagentx3.TYPE_COUNTER32,
+                            pyagentx3.TYPE_GAUGE32,
+                            pyagentx3.TYPE_TIMETICKS]:
+                    data = struct.unpack('!L', self.decode_buf[:4])
+                    data = data[0]
+                    self.decode_buf = self.decode_buf[4:]
 
-        elif vtype in [pyagentx3.TYPE_OBJECTIDENTIFIER]:
-            data, _ = self.decode_oid()
+                elif vtype in [pyagentx3.TYPE_COUNTER64]:
+                    data = struct.unpack('!Q', self.decode_buf[:8])
+                    data = data[0]
+                    self.decode_buf = self.decode_buf[8:]
 
-        elif vtype in [pyagentx3.TYPE_IPADDRESS,
-                       pyagentx3.TYPE_OPAQUE,
-                       pyagentx3.TYPE_OCTETSTRING]:
-            data = self.decode_octet()
+                elif vtype in [pyagentx3.TYPE_OBJECTIDENTIFIER]:
+                    data, _ = self.decode_oid()
 
-        elif vtype in [pyagentx3.TYPE_NULL,
-                       pyagentx3.TYPE_NOSUCHOBJECT,
-                       pyagentx3.TYPE_NOSUCHINSTANCE,
-                       pyagentx3.TYPE_ENDOFMIBVIEW]:
-            # No data
-            data = None
+                elif vtype in [pyagentx3.TYPE_IPADDRESS,
+                            pyagentx3.TYPE_OPAQUE,
+                            pyagentx3.TYPE_OCTETSTRING]:
+                    data = self.decode_octet()
 
-        else:
-            logger.error('Unknown Type: %s', vtype)
-        return {'type':vtype, 'name':oid, 'data':data}
+                elif vtype in [pyagentx3.TYPE_NULL,
+                            pyagentx3.TYPE_NOSUCHOBJECT,
+                            pyagentx3.TYPE_NOSUCHINSTANCE,
+                            pyagentx3.TYPE_ENDOFMIBVIEW]:
+                    # No data
+                    data = None
+
+                else:
+                    logger.error('Unknown value type (%s)', vtype)
+                    ok = False
+
+            except Exception:
+                logger.exception('Unable to decode value of type (%d %s) for OID (%s)',
+                    vtype, pyagentx3.TYPE_NAME.get(vtype, 'UNKNOWN'), oid)
+                ok = False
+
+        return {'type':vtype, 'name':oid, 'data':data}, ok
 
     def decode_header(self):
         try:
@@ -291,12 +323,17 @@ class PDU(object):
                 context = self.decode_octet()
                 logger.debug('Context: %s', context)
             return ret
-        except Exception as e:
+        except Exception:
             logger.exception('Invalid packing: %d', len(self.decode_buf))
             logger.debug('%s', pprint.pformat(self.decode_buf))
 
     def decode(self, buf):
         self.set_decode_buf(buf)
+
+        logger.debug('Decode AgentX PDU:')
+        for i in hexdump(self.decode_buf, sep='-'):
+            logger.debug(i)
+
         ret = self.decode_header()
         if ret['pdu_type'] == pyagentx3.AGENTX_RESPONSE_PDU:
             # Decode Response Header
@@ -311,7 +348,9 @@ class PDU(object):
             # Decode VarBindList
             self.values = []
             while len(self.decode_buf):
-                self.values.append(self.decode_value())
+                data, ok = self.decode_value()
+                if ok:
+                    self.values.append(data)
 
         elif ret['pdu_type'] == pyagentx3.AGENTX_GET_PDU:
             self.range_list = self.decode_search_range_list()
@@ -323,7 +362,9 @@ class PDU(object):
             # Decode VarBindList
             self.values = []
             while len(self.decode_buf):
-                self.values.append(self.decode_value())
+                data, ok = self.decode_value()
+                if ok:
+                    self.values.append(data)
 
         elif ret['pdu_type'] in [pyagentx3.AGENTX_COMMITSET_PDU,
                                  pyagentx3.AGENTX_UNDOSET_PDU,

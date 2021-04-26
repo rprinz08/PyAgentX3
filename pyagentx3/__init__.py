@@ -6,6 +6,7 @@ from pyagentx3.updater import Updater
 from pyagentx3.agent import Agent
 from pyagentx3.sethandler import SetHandler, SetHandlerError
 
+
 def setup_logging(debug=False):
     if debug:
         level = logging.DEBUG

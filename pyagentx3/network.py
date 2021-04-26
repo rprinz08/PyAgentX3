@@ -63,11 +63,9 @@ class Network(threading.Thread):
     def send_pdu(self, pdu, force=False):
         log_level = logging.INFO if force else logging.DEBUG
         if self.debug or force:
-            logger.log(log_level, "Send PDU:")
+            logger.log(log_level, "---- Sent PDU:")
             pdu.dump()
         buf = pdu.encode()
-        if self.debug or force:
-            logger.log(log_level, buf)
         self.socket.send(buf)
 
     def recv_pdu(self):
@@ -75,9 +73,10 @@ class Network(threading.Thread):
         if not buf:
             return None
         pdu = PDU()
+        if self.debug:
+            logger.debug("---- Received PDU:")
         pdu.decode(buf)
         if self.debug:
-            logger.debug("Received PDU:")
             pdu.dump()
         return pdu
 
