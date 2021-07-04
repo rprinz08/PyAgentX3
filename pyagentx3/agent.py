@@ -56,6 +56,7 @@ class Agent():
         except ValueError:
             raise AgentError('OID isn\'t valid')
         self._sethandlers[oid] = class_(data_store=data_store)
+        self._sethandlers[oid].agent_setup(oid)
 
     def setup(self):
         # Override this
