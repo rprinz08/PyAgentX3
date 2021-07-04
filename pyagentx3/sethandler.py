@@ -41,8 +41,6 @@ class SetHandler():
     def network_testset(self, session_id, transaction_id):
         tid = "%s_%s" % (session_id, transaction_id)
         try:
-            # strip off leading oid
-            oid = oid[len(self._oid) + 1:]
             self.testset(tid, self.transactions[tid])
         except SetHandlerError as e:
             logger.error('TestSet failed: %s', e)
