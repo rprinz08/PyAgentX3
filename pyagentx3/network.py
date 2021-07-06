@@ -196,7 +196,10 @@ class Network(threading.Thread):
 
             response = self.response_pdu(request)
             if request.type == pyagentx3.AGENTX_GET_PDU:
-                logger.info("Received GET PDU")
+                toid = ""
+                if request.range_list:
+                    toid = request.range_list[0][0]
+                logger.info("Received GET PDU: " + str(toid))
                 for rvalue in request.range_list:
                     oid = rvalue[0]
                     logger.debug("OID: %s", oid)
