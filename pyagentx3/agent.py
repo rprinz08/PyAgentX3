@@ -56,7 +56,6 @@ class Agent():
         except ValueError:
             raise AgentError('OID isn\'t valid')
         self._sethandlers[oid] = class_(data_store=data_store)
-        self._sethandlers[oid].agent_setup(oid)
 
     def setup(self):
         # Override this
@@ -73,6 +72,11 @@ class Agent():
             thread.agent_setup(queue, u['oid'], u['freq'])
             thread.start()
             self._threads.append(thread)
+
+        # Setup SetHandlers
+        for oid in self._sethandlers:
+            logger.debug('Initializing sethandler [%s]', oid)
+            self._sethandlers[oid].agent_setup(queue, oid)
 
         # Start Network
         oid_list = [u['oid'] for u in self._updater_list]
