@@ -229,7 +229,7 @@ class PDU(object):
             buf = b''
             self.decode_buf = self.decode_buf[4:]
             if l > 0:
-                padding = 4 - (l % 4)
+                padding = (4 - (l % 4)) % 4
                 buf = self.decode_buf[:l]
                 self.decode_buf = self.decode_buf[l+padding:]
             return buf
