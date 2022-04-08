@@ -11,7 +11,6 @@ logger.addHandler(NullHandler())
 
 import time
 from queue import Queue
-import inspect
 import pyagentx3
 from pyagentx3.updater import Updater
 from pyagentx3.network import Network
