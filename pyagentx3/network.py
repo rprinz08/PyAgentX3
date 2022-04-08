@@ -154,7 +154,7 @@ class Network(threading.Thread):
         return None # No match!
 
     def start(self):
-        while True:
+        while not self.stop.is_set():
             try:
                 self._start_network()
             except socket.error:
@@ -188,8 +188,10 @@ class Network(threading.Thread):
                 self._get_updates()
                 request = self.recv_pdu()
             except socket.timeout:
+                if self.stop.is_set():
+                    break
                 continue
-
+            
             if not request:
                 logger.error("Empty PDU, connection closed!")
                 raise socket.error

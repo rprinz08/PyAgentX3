@@ -90,5 +90,5 @@ class Agent():
             thread.stop.set()
         logger.debug('Wait for updater')
         for thread in self._threads:
-            thread.join()
+            thread.join(10)
 
