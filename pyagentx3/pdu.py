@@ -89,7 +89,7 @@ class PDU(object):
 
         buf += bytearray(data)
 
-        padding = (4 - (data_len % 4)) % 4
+        padding = -data_len % 4
         buf += bytearray([0] * padding)
         return buf
 
@@ -229,7 +229,7 @@ class PDU(object):
             buf = b''
             self.decode_buf = self.decode_buf[4:]
             if l > 0:
-                padding = 4 - (l % 4)
+                padding = -l % 4
                 buf = self.decode_buf[:l]
                 self.decode_buf = self.decode_buf[l+padding:]
             return buf
