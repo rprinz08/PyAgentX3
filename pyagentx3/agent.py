@@ -22,8 +22,9 @@ class AgentError(Exception):
 
 class Agent():
 
-    def __init__(self, agent_id='MyAgent'):
+    def __init__(self, agent_id='MyAgent', socket_path=None):
         self.agent_id = agent_id
+        self.socket_path = socket_path if socket_path else pyagentx3.SOCKET_PATH
         self._updater_list = []
         self._sethandlers = {}
         self._threads = []
@@ -74,7 +75,8 @@ class Agent():
 
         # Start Network
         oid_list = [u['oid'] for u in self._updater_list]
-        thread = Network(queue, oid_list, self._sethandlers, self.agent_id)
+        thread = Network(queue, oid_list, self._sethandlers,
+            self.agent_id, self.socket_path)
         thread.start()
         self._threads.append(thread)
 

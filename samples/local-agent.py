@@ -128,8 +128,8 @@ class NetSnmpIntegerSet(pyagentx3.SetHandler):
 
 class SampleAgent(pyagentx3.Agent):
 
-    def __init__(self):
-        super().__init__(agent_id='SampleAgent')
+    def __init__(self, agent_id='SampleAgent', socket_path=None):
+        super().__init__(agent_id, socket_path)
 
     def setup(self):
         data = TestData()

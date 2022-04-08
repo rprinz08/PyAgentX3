@@ -19,10 +19,11 @@ from pyagentx3.pdu import PDU
 
 class Network(threading.Thread):
 
-    def __init__(self, queue, oid_list, sethandlers, agent_id):
+    def __init__(self, queue, oid_list, sethandlers, agent_id, socket_path):
         threading.Thread.__init__(self)
         self.stop = threading.Event()
         self._agent_id = agent_id
+        self._socket_path = socket_path
         self._queue = queue
         self._oid_list = oid_list
         self._sethandlers = sethandlers
@@ -38,9 +39,11 @@ class Network(threading.Thread):
     def _connect(self):
         while True:
             try:
+                logger.info("Try to open socket on ({})".format(self._socket_path))
                 self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                self.socket.connect(pyagentx3.SOCKET_PATH)
+                self.socket.connect(self._socket_path)
                 self.socket.settimeout(0.1)
+                logger.info("Opened socket on ({})".format(self._socket_path))
                 return
             except socket.error:
                 logger.error("Failed to connect, sleeping and retrying later")
@@ -191,7 +194,7 @@ class Network(threading.Thread):
                 if self.stop.is_set():
                     break
                 continue
-            
+
             if not request:
                 logger.error("Empty PDU, connection closed!")
                 raise socket.error
