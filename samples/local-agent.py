@@ -108,7 +108,7 @@ class NetSnmpTestMibTable(pyagentx3.Updater):
     def update(self):
         # Implement netSnmpIETFWGTable from NET-SNMP-EXAMPLES-MIB.txt
         # Number of entries in table is random to show that MIB is reset
-        # on every updatI
+        # on every update
         for i in range(random.randint(3, 5)):
             idx = str_to_oid('group%s' % (i + 1))
             self.set_OCTETSTRING('1.1.2.' + idx, 'member 1')
