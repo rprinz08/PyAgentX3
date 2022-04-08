@@ -30,7 +30,7 @@ class Agent():
         self._threads = []
 
     def register(self, oid, class_, freq=10, data_store=None):
-        if Updater not in inspect.getmro(class_):
+        if not issubclass(class_, Updater):
             raise AgentError('Class given isn\'t an updater')
 
         # cleanup and test oid
@@ -46,7 +46,7 @@ class Agent():
             'freq': freq})
 
     def register_set(self, oid, class_, data_store=None):
-        if pyagentx3.SetHandler not in class_.__bases__:
+        if not issubclass(class_, pyagentx3.SetHandler):
             raise AgentError('Class given isn\'t a SetHandler')
 
         # cleanup and test oid
