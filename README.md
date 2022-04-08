@@ -4,7 +4,7 @@
 it will allow to extend an SNMP agent (e.g snmpd) by writing AgentX subagents,
 without modifying the original SNMP agent.
 
-[RFC 2741: Agent Extensibility (AgentX) Protocol](http://www.ietf.org/rfc/rfc2741.txt)
+[RFC 2741: Agent Extensibility (AgentX) Protocol](https://www.ietf.org/rfc/rfc2741.html)
 
 This is a fork of the Python2 based PyAgentX package (available at
 <https://github.com/hosthvo/pyagentx>)
