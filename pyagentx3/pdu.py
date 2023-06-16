@@ -75,7 +75,7 @@ class PDU(object):
         data_len = 0
         data = octet
 
-        if not isinstance(octet, collections.Sized):
+        if not isinstance(octet, collections.abc.Sized):
             if isinstance(octet, IPv4Address) or isinstance(octet, IPv6Address):
                 data = octet.packed
             else:
