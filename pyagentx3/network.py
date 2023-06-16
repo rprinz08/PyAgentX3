@@ -13,6 +13,7 @@ import socket
 import time
 import threading
 from queue import Empty
+import struct
 import pyagentx3
 from pyagentx3.pdu import PDU
 
@@ -27,6 +28,7 @@ class Network(threading.Thread):
         self._queue = queue
         self._oid_list = oid_list
         self._sethandlers = sethandlers
+        self._recv_buf = bytes()
 
         self.session_id = 0
         self.transaction_id = 0
@@ -72,15 +74,46 @@ class Network(threading.Thread):
         self.socket.send(buf)
 
     def recv_pdu(self):
-        buf = self.socket.recv(1024)
-        if not buf:
+        # Try to read next n bytes from socket until at least a full
+        # PDU header is available.
+        if len(self._recv_buf) < pyagentx3.AX_PDU_HDR_LEN:
+            self._recv_buf += self.socket.recv(4096)
+            if len(self._recv_buf) < pyagentx3.AX_PDU_HDR_LEN:
+                return None
+
+        # Try to decode a PDU header from beginning of buffer.
+        hdr = PDU.decode_header(self._recv_buf[:pyagentx3.AX_PDU_HDR_LEN])
+        # If its not possible to decode a PDU header from buffer, remove
+        # invalid PDU header from buffer.
+        if not isinstance(hdr, dict):
+            self._recv_buf = self._recv_buf[pyagentx3.AX_PDU_HDR_LEN:]
             return None
-        pdu = PDU()
+        payload_len = hdr["payload_length"]
+
+        # Ensure that full PDU is in buffer.
+        # Note: Max PDU payload length could be ~4GB,
+        # this could be problematic ...
+        next_pdu_len = pyagentx3.AX_PDU_HDR_LEN + payload_len
+        if len(self._recv_buf) < next_pdu_len:
+            self._recv_buf += self.socket.recv(next_pdu_len)
+            if len(self._recv_buf) < next_pdu_len:
+                return None
+
         if self.debug:
             logger.debug("---- Received PDU:")
-        pdu.decode(buf)
+
+        # Payload length valid, so decode complete PDU.
+        pdu = PDU()
+        pdu.decode(self._recv_buf[:next_pdu_len])
+        self._recv_buf = self._recv_buf[next_pdu_len:]
+
         if self.debug:
             pdu.dump()
+            logger.debug("---- Remaining buffer length ({})".format(
+                len(self._recv_buf)))
+            logger.debug("---- Buffer length ({}), PDU length ({})".format(
+                len(self._recv_buf), next_pdu_len))
+
         return pdu
 
     # =========================================

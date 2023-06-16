@@ -127,7 +127,7 @@ class PDU(object):
         return buf
 
     def encode_header(self, pdu_type, payload_length=0, flags=0):
-        flags = flags | 0x10  # Bit 5 = all ints in NETWORK_BYTE_ORDER
+        flags = flags | pyagentx3.AX_PDU_FLAG_BYTE_ORDER # Bit 5 = all ints in NETWORK_BYTE_ORDER
         buf = struct.pack('BBBB', 1, pdu_type, flags, 0)
         buf += struct.pack('!L', self.session_id) # sessionID
         buf += struct.pack('!L', self.transaction_id) # transactionID
@@ -298,14 +298,14 @@ class PDU(object):
 
         return {'type':vtype, 'name':oid, 'data':data}, ok
 
-    def decode_header(self):
+    @staticmethod
+    def decode_header(buf):
         try:
-            t = struct.unpack('!BBBBLLLL', self.decode_buf[:20])
-            self.decode_buf = self.decode_buf[20:]
+            t = struct.unpack('!BBBBLLLL', buf[:pyagentx3.AX_PDU_HDR_LEN])
             ret = {
                 'version': t[0],
                 'pdu_type':t[1],
-                'pdu_type_name':  pyagentx3.PDU_TYPE_NAME[t[1]],
+                'pdu_type_name': pyagentx3.PDU_TYPE_NAME[t[1]],
                 'flags':t[2],
                 'reserved':t[3],
                 'session_id':t[4],
@@ -313,13 +313,24 @@ class PDU(object):
                 'packet_id':t[6],
                 'payload_length':t[7],
             }
+            return ret
+        except Exception:
+            return None
+
+    def _decode_header(self):
+        try:
+            ret = self.__class__.decode_header(self.decode_buf)
+            self.decode_buf = self.decode_buf[pyagentx3.AX_PDU_HDR_LEN:]
+            if not isinstance(ret, dict):
+                raise Exception("Invalid PDU header")
+
             self.state = ret
             self.type = ret['pdu_type']
             self.session_id = ret['session_id']
             self.packet_id = ret['packet_id']
             self.transaction_id = ret['transaction_id']
             self.decode_buf = self.decode_buf[:ret['payload_length']]
-            if ret['flags'] & 0x08:  # content present
+            if ret['flags'] & pyagentx3.AX_PDU_FLAG_CONTEXT:  # content present
                 context = self.decode_octet()
                 logger.debug('Context: %s', context)
             return ret
@@ -334,7 +345,9 @@ class PDU(object):
         for i in hexdump(self.decode_buf, sep='-'):
             logger.debug(i)
 
-        ret = self.decode_header()
+        ret = self._decode_header()
+        if not isinstance(ret, dict):
+            return
         if ret['pdu_type'] == pyagentx3.AGENTX_RESPONSE_PDU:
             # Decode Response Header
             t = struct.unpack('!LHH', self.decode_buf[:8])
@@ -375,4 +388,3 @@ class PDU(object):
             pdu_type_str = pyagentx3.PDU_TYPE_NAME.get(ret['pdu_type'],
                 'Unknown:'+ str(ret['pdu_type']))
             logger.error('Unsupported PDU type: %s', pdu_type_str)
-

@@ -22,6 +22,57 @@ def setup_logging(debug=False):
 
 SOCKET_PATH = "/var/agentx/master"
 
+# See RFC2741 (https://datatracker.ietf.org/doc/html/rfc2741) for details
+
+# The AgentX PDU header is a fixed-format, 20-octet structure:
+
+# +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+# |   h.version   |    h.type     |    h.flags    |  <reserved>   |
+# +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+# |                          h.sessionID                          |
+# +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+# |                        h.transactionID                        |
+# +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+# |                          h.packetID                           |
+# +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+# |                        h.payload_length                       |
+# +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+# Length of AgentX PDU header.
+AX_PDU_HDR_LEN = 20
+
+# Byte positions and sizes of various PDU header fields.
+AX_PDU_HDR_VER = 0
+AX_PDU_HDR_VER_SIZE = 1
+
+AX_PDU_HDR_TYPE = 1
+AX_PDU_HDR_TYPE_SIZE = 1
+
+AX_PDU_HDR_FLAGS = 2
+AX_PDU_HDR_FLAGS_SIZE = 1
+
+AX_PDU_HDR_RESERVED = 3
+AX_PDU_HDR_RESERVED_SIZE = 1
+
+AX_PDU_HDR_SESSION_ID = 4
+AX_PDU_HDR_SESSION_ID_SIZE = 4
+
+AX_PDU_HDR_TRANSACTION_ID = 8
+AX_PDU_HDR_TRANSACTION_ID_SIZE = 4
+
+AX_PDU_HDR_PACKET_ID = 12
+AX_PDU_HDR_PACKET_ID_SIZE = 4
+
+AX_PDU_HDR_PAYLOAD_LEN = 16
+AX_PDU_HDR_PAYLOAD_LEN_SIZE = 4
+
+# Header flags
+AX_PDU_FLAG_REG = 1         # Instance registration
+AX_PDU_FLAG_NEW = 2         # New index
+AX_PDU_FLAG_ANY = 4         # Any index
+AX_PDU_FLAG_CONTEXT = 8     # Default or non default context
+AX_PDU_FLAG_BYTE_ORDER = 16 # Byte order
+
 AGENTX_EMPTY_PDU = 1
 AGENTX_OPEN_PDU = 1
 AGENTX_CLOSE_PDU = 2
@@ -148,4 +199,3 @@ ERROR_NAMES[265] = "UNKNOWNAGENTCAPS"
 ERROR_NAMES[266] = "PARSEERROR"
 ERROR_NAMES[267] = "REQUESTDENIED"
 ERROR_NAMES[268] = "PROCESSINGERROR"
-
