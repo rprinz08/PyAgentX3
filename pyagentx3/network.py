@@ -234,7 +234,10 @@ class Network(threading.Thread):
 
             response = self.response_pdu(request)
             if request.type == pyagentx3.AGENTX_GET_PDU:
-                logger.info("Received GET PDU")
+                toid = ""
+                if request.range_list:
+                    toid = request.range_list[0][0]
+                logger.info("Received GET PDU: " + str(toid))
                 for rvalue in request.range_list:
                     oid = rvalue[0]
                     logger.debug("OID: %s", oid)
@@ -264,6 +267,7 @@ class Network(threading.Thread):
             elif request.type == pyagentx3.AGENTX_TESTSET_PDU:
                 logger.info("Received TESTSET PDU")
                 idx = 0
+                used_sethandlers = []
                 for row in request.values:
                     idx += 1
                     oid = row['name']
@@ -282,6 +286,7 @@ class Network(threading.Thread):
                         response.error_index = idx
                         break
                     try:
+                        used_sethandlers.append(self._sethandlers[matching_oid])
                         self._sethandlers[matching_oid].network_test(
                             request.session_id, request.transaction_id,
                             oid, row['data'])
@@ -290,6 +295,13 @@ class Network(threading.Thread):
                         response.error = pyagentx3.ERROR_WRONGVALUE
                         response.error_index = idx
                         break
+                try:
+                    for sethandler in used_sethandlers:
+                        sethandler.network_testset(request.session_id, request.transaction_id)
+                except pyagentx3.SetHandlerError:
+                    logger.debug('TestSet request failed: set failed')
+                    response.error = pyagentx3.ERROR_WRONGVALUE
+                    response.error_index = idx
                 logger.debug('TestSet request passed')
 
 

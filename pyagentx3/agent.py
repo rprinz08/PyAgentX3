@@ -73,6 +73,11 @@ class Agent():
             thread.start()
             self._threads.append(thread)
 
+        # Setup SetHandlers
+        for oid in self._sethandlers:
+            logger.debug('Initializing sethandler [%s]', oid)
+            self._sethandlers[oid].agent_setup(queue, oid)
+
         # Start Network
         oid_list = [u['oid'] for u in self._updater_list]
         thread = Network(queue, oid_list, self._sethandlers,
