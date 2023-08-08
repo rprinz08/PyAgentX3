@@ -3,10 +3,10 @@ from setuptools import setup
 
 setup(
     name = "pyagentx3",
-    version = "0.1.3",
+    version = "0.1.4",
     author = "Richard Prinz",
     author_email = "richard.prinz@min.at",
-    description = ("AgentX package to extend SNMP with pure Python3"),
+    description = ("AgentX package to extend SNMP with pure Python3.10"),
     license = "BSD",
     keywords = "snmp network agentx ",
     url = "https://github.com/rprinz08/pyagentx3",
